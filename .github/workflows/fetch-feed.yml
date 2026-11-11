@@ -1,0 +1,28 @@
+name: Fetch V1 Feed
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every hour
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Fetch V1 feed
+        run: python v1-feed-app/scripts/fetch_feed.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add v1-feed-app/public/feed.json
+          git diff --staged --quiet || git commit -m "Update feed $(date -u '+%Y-%m-%d %H:%M')"
+          git push
