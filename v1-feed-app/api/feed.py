@@ -19,62 +19,54 @@ def scrape_v1():
 
     items = []
 
-    # Extract thumbnails
-    thumbs = re.findall(r'https://img\.mako\.co\.il/[^\s"\'<>]+?FirstFrame[^\s"\'<>]*\.jpg', html)
+    # The V1 homepage contains structured blocks like:
+    # ## [title](link)
+    # category
+    # 2026-11-11T06:16:50.000Z
+    # optional description
+    # https://kdsf.akamaized.net/.../master.m3u8
 
-    # Extract video URLs
-    videos = re.findall(r'https://kdsf\.akamaized\.net/[^\s"\'<>]+?master\.m3u8', html)
-
-    # Extract article links
-    links = re.findall(r'https://www\.v-1\.co\.il/[a-z0-9_\-/]+/shorts-[a-z0-9]+\.htm', html)
-
-    # Extract titles from h2 tags
-    titles_raw = re.findall(r'<h2[^>]*>\s*<a[^>]*>([^<]+)</a>\s*</h2>', html)
-    if not titles_raw:
-        # try another pattern
-        titles_raw = re.findall(r'##\s+\[([^\]]{5,200})\]', html)
-
-    # Extract categories
-    cats_raw = re.findall(r'<span[^>]*class="[^"]*category[^"]*"[^>]*>([^<]+)</span>', html)
-    if not cats_raw:
-        cats_raw = re.findall(r'\n([^\n]{2,20})\n\n\d{4}-\d{2}-\d{2}', html)
-
-    # Extract timestamps
-    times_raw = re.findall(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)', html)
-    # deduplicate while preserving order
-    seen = set()
-    times_unique = []
-    for t in times_raw:
-        if t not in seen:
-            seen.add(t)
-            times_unique.append(t)
-
-    # Extract descriptions (text between timestamp and video url in markdown-like structure)
-    # Pattern: timestamp \n\n description \n\n video_url
-    desc_pattern = re.compile(
-        r'\d{4}-\d{2}-\d{2}T[\d:.Z]+\s*\n+\s*([^\n]{20,400}?)\s*\n+\s*https://kdsf',
+    # Find all blocks anchored by an ISO timestamp followed by a kdsf video URL
+    block_pattern = re.compile(
+        r'##\s+\[(.+?)\]\((https://www\.v-1\.co\.il/[^\)]+)\)'  # title + link
+        r'\s+([^\n]+)\n'                                          # category
+        r'\s*(\d{4}-\d{2}-\d{2}T[\d:.Z]+)\s*\n'                # timestamp
+        r'(.*?)'                                                   # optional desc
+        r'\s*(https://kdsf\.akamaized\.net/[^\s]+master\.m3u8)', # video
         re.DOTALL
     )
-    descs = []
-    for m in desc_pattern.finditer(html):
-        d = m.group(1).strip()
-        if len(d) > 15:
-            descs.append(d)
-        else:
-            descs.append("")
 
-    # Build items — use the minimum length across all lists
-    n = min(len(titles_raw), len(links), len(videos), len(times_unique))
+    # Thumbnails in order
+    thumbs = re.findall(
+        r'https://img\.mako\.co\.il/\d{4}/\d{2}/\d{2}/[^\s"\'<>]+?FirstFrame[^\s"\'<>]*?\.jpg',
+        html
+    )
 
-    for i in range(n):
+    thumb_idx = 0
+    for m in block_pattern.finditer(html):
+        title    = m.group(1).strip()
+        link     = m.group(2).strip()
+        cat      = m.group(3).strip()
+        time_str = m.group(4).strip()
+        desc_raw = m.group(5).strip()
+        video    = m.group(6).strip()
+
+        # Clean description — skip if it looks like a URL or is too short
+        desc = ""
+        if desc_raw and not desc_raw.startswith("http") and len(desc_raw) > 10:
+            desc = desc_raw[:250]
+
+        thumb = thumbs[thumb_idx] if thumb_idx < len(thumbs) else ""
+        thumb_idx += 1
+
         items.append({
-            "title": titles_raw[i].strip(),
-            "link":  links[i] if i < len(links) else "",
-            "cat":   cats_raw[i].strip() if i < len(cats_raw) else "",
-            "time":  times_unique[i] if i < len(times_unique) else "",
-            "thumb": thumbs[i] if i < len(thumbs) else "",
-            "video": videos[i] if i < len(videos) else "",
-            "desc":  descs[i][:250] if i < len(descs) else "",
+            "title": title,
+            "link":  link,
+            "cat":   cat,
+            "time":  time_str,
+            "thumb": thumb,
+            "video": video,
+            "desc":  desc,
         })
 
     # Sort newest first
