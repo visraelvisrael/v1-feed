@@ -1,23 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/feed.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
+  "functions": {
+    "api/feed.py": {
+      "maxDuration": 30
     }
+  },
+  "builds": [
+    { "src": "api/feed.py", "use": "@vercel/python" },
+    { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
-    {
-      "src": "/api/feed",
-      "dest": "/api/feed.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
-    }
+    { "src": "/api/feed", "dest": "/api/feed.py" },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
