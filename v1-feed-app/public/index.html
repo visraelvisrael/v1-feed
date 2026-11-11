@@ -311,7 +311,7 @@ async function load(manual) {
     const data = await res.json();
 
     if (!data.ok) throw new Error(data.error || 'שגיאת שרת');
-    if (!Array.isArray(data.items) || !data.items.length) throw new Error('הפיד ריק');
+    if (!Array.isArray(data.items) throw new Error('הפיד ריק');
 
     const prevTitles  = new Set(items.map(i => i.title));
     const freshTitles = new Set(data.items.filter(i => !prevTitles.has(i.title)).map(i => i.title));
