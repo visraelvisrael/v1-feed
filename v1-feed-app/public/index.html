@@ -150,7 +150,7 @@
 // When testing locally open index.html directly, it falls back to the
 // Vercel deployment URL — update this after your first deploy.
 const API_URL = window.location.hostname === 'localhost' || window.location.protocol === 'file:'
-  ? 'REPLACE_WITH_YOUR_VERCEL_URL/api/feed'   // ← update after first deploy
+  ? 'https://v1news.vercel.app/api/feed'   // ← update after first deploy
   : '/api/feed';
 
 // ── state ───────────────────────────────────────────────────────────────────
