@@ -51,6 +51,11 @@ if __name__ == "__main__":
     items = scrape()
     print(f"Fetched {len(items)} items")
 
+    # Only save if we got real items
+    if not items:
+        print("No items fetched, keeping existing feed.json")
+        exit(0)
+
     out_path = os.path.join(os.path.dirname(__file__), "../public/feed.json")
     out_path = os.path.normpath(out_path)
 
