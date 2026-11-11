@@ -4,6 +4,36 @@ import json
 import re
 
 
+def fetch_title(url):
+    """Fetch og:title from a V1 article page."""
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "he-IL,he;q=0.9",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            html = resp.read(8000).decode("utf-8", errors="replace")
+
+        # Try og:title first
+        m = re.search(r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']', html)
+        if m:
+            return m.group(1).strip()
+
+        # Try regular title tag
+        m = re.search(r'<title>([^<]+)</title>', html)
+        if m:
+            t = m.group(1).strip()
+            # Remove site suffix like " - V1" or " | mako"
+            t = re.sub(r'\s*[-|]\s*(V1|mako|וואן).*$', '', t, flags=re.IGNORECASE)
+            return t.strip()
+    except:
+        pass
+    return ""
+
+
 def scrape_v1():
     url = "https://www.v-1.co.il/"
     req = urllib.request.Request(
@@ -23,29 +53,22 @@ def scrape_v1():
     links  = re.findall(r'https://www\.v-1\.co\.il/[a-z0-9_\-/]+/shorts-[a-z0-9]+\.htm', html)
     times  = list(dict.fromkeys(re.findall(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z', html)))
 
-    # Try to get titles from markdown links
-    titles = re.findall(r'##\s+\[([^\]]{3,300})\]\(https://www\.v-1\.co\.il', html)
-
     items = []
-    n = min(len(videos), len(times))
+    n = min(len(videos), len(times), 20)  # limit to 20
 
     for i in range(n):
-        if i < len(titles):
-            title = titles[i].strip()
-        else:
-            # Use link slug as title fallback
-            if i < len(links):
-                parts = links[i].rstrip('/').split('/')
-                slug = parts[-2] if len(parts) >= 2 else parts[-1]
-                slug = re.sub(r'[-_]', ' ', slug)
-                slug = re.sub(r'\d{4,}', '', slug).strip()
-                title = slug if len(slug) > 3 else f"קליפ {i+1}"
-            else:
-                title = f"קליפ {i+1}"
+        link = links[i] if i < len(links) else ""
+
+        # Fetch real title from article page
+        title = fetch_title(link) if link else ""
+
+        # Fallback if fetch failed
+        if not title:
+            title = f"קליפ {i+1}"
 
         items.append({
             "title": title,
-            "link":  links[i] if i < len(links) else "https://www.v-1.co.il",
+            "link":  link,
             "cat":   "",
             "time":  times[i],
             "thumb": thumbs[i] if i < len(thumbs) else "",
@@ -54,7 +77,7 @@ def scrape_v1():
         })
 
     items.sort(key=lambda x: x.get("time", ""), reverse=True)
-    return items[:60]
+    return items
 
 
 class handler(BaseHTTPRequestHandler):
