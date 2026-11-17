@@ -1,8 +1,15 @@
 {
   "version": 2,
-  "functions": {
-    "api/feed.py": {
-      "maxDuration": 60
+  "builds": [
+    {
+      "src": "api/feed.py",
+      "use": "@vercel/python"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/feed",
+      "dest": "api/feed.py"
+    }
+  ]
 }
