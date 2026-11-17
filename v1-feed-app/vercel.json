@@ -4,13 +4,5 @@
     "api/feed.py": {
       "maxDuration": 60
     }
-  },
-  "builds": [
-    { "src": "api/feed.py", "use": "@vercel/python" },
-    { "src": "public/**", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/api/feed", "dest": "/api/feed.py" },
-    { "src": "/(.*)", "dest": "/public/$1" }
-  ]
+  }
 }
