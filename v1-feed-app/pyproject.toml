@@ -1,2 +1,2 @@
 [tool.vercel]
-entrypoint = "api/feed:handler"
+entrypoint = "api/feed.py:handler"
