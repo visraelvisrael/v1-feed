@@ -1,1 +1,2 @@
 # No external packages needed — uses Python stdlib only (urllib, json, re)
+beautifulsoup4
